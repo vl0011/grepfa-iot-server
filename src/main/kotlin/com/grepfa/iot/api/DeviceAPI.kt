@@ -3,9 +3,13 @@ package com.grepfa.iot.api
 import com.grepfa.iot.data.type.*
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.util.*
+import kotlin.collections.ArrayList
 
 enum class Network(val columnName: String) {
     LORAWAN("lorawan"),
@@ -23,6 +27,7 @@ data class NewDeviceRequest(
 )
 
 object DeviceAPI {
+    val logger = LoggerFactory.getLogger(javaClass)
     fun newDevice(
         request: NewDeviceRequest
     ): Pair<UUID?, String> {
@@ -61,7 +66,91 @@ object DeviceAPI {
             GDevice.findById(id)?.delete()
         }
     }
+
+    fun findPartsFromPhyAddress(phyAddress: String):GDeviceData {
+        logger.info("called: find parts from physical address")
+        return transaction {
+            val query = GDevices.innerJoin(GProfiles).innerJoin(GParts)
+                .select {
+                    GDevices.address eq phyAddress and (GParts.type eq PartType.SENSOR.columnName)
+                }
+            val di = GDevice.wrapRows(query).first()
+
+            val partsList = ArrayList<GPartData>()
+            GPart.wrapRows(query).forEach() { x ->
+                partsList.add(GPartData(
+                    id = x.id.value.toString(),
+                    name = x.name,
+                    type = x.type,
+                    varType = x.varType,
+                    summary = x.summary,
+                    desc = x.desc,
+                    unit = x.unit,
+                    min = x.min,
+                    max = x.max,
+                ))
+            }
+            GDeviceData(
+                parts = partsList,
+                name = di.name,
+                summary = di.summary,
+                description = di.desc,
+                network = di.network,
+                address = di.address,
+                profileId = di.profile.id.value.toString(),
+                deviceId = di.id.value.toString()
+            )
+        }
+    }
+
+    fun findPartsFromDeviceUUID(uuid: String):GDeviceData {
+        logger.info("called: find parts from device uuid")
+        return transaction {
+            val query = GDevices.innerJoin(GProfiles).innerJoin(GParts)
+                .select {
+                    GDevices.id eq UUID.fromString(uuid) and (GParts.type eq PartType.SENSOR.columnName)
+                }
+            val di = GDevice.wrapRows(query).first()
+
+            val partsList = ArrayList<GPartData>()
+            GPart.wrapRows(query).forEach() { x ->
+                partsList.add(GPartData(
+                    id = x.id.value.toString(),
+                    name = x.name,
+                    type = x.type,
+                    varType = x.varType,
+                    summary = x.summary,
+                    desc = x.desc,
+                    unit = x.unit,
+                    min = x.min,
+                    max = x.max,
+                ))
+            }
+            GDeviceData(
+                parts = partsList,
+                name = di.name,
+                summary = di.summary,
+                description = di.desc,
+                network = di.network,
+                address = di.address,
+                profileId = di.profile.id.value.toString(),
+                deviceId = di.id.value.toString()
+            )
+        }
+    }
+
 }
 
 
+@Serializable
+data class GDeviceData(
+    val name: String,
+    val summary: String,
+    val description: String,
+    val network: String,
+    val address: String,
+    val profileId: String,
+    val deviceId: String,
+    val parts: List<GPartData>
+)
 

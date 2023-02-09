@@ -2,6 +2,12 @@
 
 package com.grepfa.iot.data.event.chirpstack
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.grepfa.iot.data.event.grepfa.GEvUp
+
+
+
+
+
 data class EvUp(
     var `data`: String,
     var deduplicationId: String,
@@ -12,7 +18,7 @@ data class EvUp(
     var rxInfo: List<RxInfo>,
     var time: String,
     var txInfo: TxInfo
-) {
+){
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,

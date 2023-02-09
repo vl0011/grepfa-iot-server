@@ -7,7 +7,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.Database
+import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.collections.ArrayList
 
 fun Application.configureDatabases() {
     val database = Database.connect(
@@ -18,6 +20,10 @@ fun Application.configureDatabases() {
     )
 
     routing {
+        route("/test") {
+            get {
+            }
+        }
         route("/api") {
             route("/profile") {
                 post("/add") {
@@ -33,9 +39,10 @@ fun Application.configureDatabases() {
                         GNewProfileRequest(
                             listOf<GPartData>(
                                 GPartData(
+                                    id = "dont use this field",
                                     "name",
-                                    PartType.SENSOR,
-                                    PartVarType.INTEGER,
+                                    "sensor",
+                                    "integer",
                                     "summary",
                                     "desc",
                                     "mm",
@@ -74,6 +81,16 @@ fun Application.configureDatabases() {
                         summary = "summary",
                         description = "desc"
                     ))
+                }
+                route("/info") {
+                    get("/phy_address/{phyAddress?}") {
+                        val phyAddr = call.parameters["phyAddress"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                        call.respond(DeviceAPI.findPartsFromPhyAddress(phyAddr))
+                    }
+                    get("/uuid/{phyAddress?}") {
+                        val phyAddr = call.parameters["phyAddress"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                        call.respond(DeviceAPI.findPartsFromDeviceUUID(phyAddr))
+                    }
                 }
                 delete("{deviceId?}"){
                     val id = call.parameters["deviceId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)

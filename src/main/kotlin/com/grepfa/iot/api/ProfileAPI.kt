@@ -26,14 +26,17 @@ data class GNewProfileRequest(
 
 @Serializable
 data class GPartData(
+    // 파츠 id
+    val id: String = "",
+
     // 파츠 이름
     val name: String,
 
     // sensor or actuator ...
-    val type : PartType,
+    val type: String,
 
     // 변수 타입 float int string ...
-    val varType: PartVarType,
+    val varType: String,
 
     // 파츠 설명 요약
     val summary:String = "",
@@ -66,10 +69,10 @@ object ProfileAPI {
                 GPart.new {
                     profile = t
                     name = part.name
-                    type = part.type.columnName
+                    type = part.type
                     summary = part.summary
                     desc = part.desc
-                    varType = part.varType.columnName
+                    varType = part.varType
                     unit = part.unit
                     min = part.min
                     max = part.max
