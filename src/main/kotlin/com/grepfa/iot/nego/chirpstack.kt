@@ -3,15 +3,19 @@ package com.grepfa.iot.nego
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.grepfa.iot.api.DeviceAPI
 import com.grepfa.iot.data.event.chirpstack.*
+import com.grepfa.iot.data.event.grepfa.GEvMsg
+import com.grepfa.iot.data.event.grepfa.IGEvBase
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.slf4j.LoggerFactory
 import java.util.*
+
 data class ChirpStackConnectionOptions(
     val broker: String,
-    val clientId : String,
-    val appId : String,
+    val clientId: String,
+    val appId: String,
     val qos: Int
 )
 
@@ -53,7 +57,9 @@ class ChirpStackNegotiator(val opt: ChirpStackConnectionOptions) {
 
             mqttClient.connect(connOpts).waitForCompletion()
             logger.info("connect success!")
-
+            topicList.forEach {
+                logger.info("try subscript topic :\"${it}\"")
+            }
             mqttClient.subscribe(topicList, qosList, cbList)
             logger.info("subscribe topics success!")
 
@@ -76,11 +82,11 @@ class ChirpStackNegotiator(val opt: ChirpStackConnectionOptions) {
         return l[3]
     }
 
-    abstract inner class SubCb<T> : IMqttMessageListener {
+    abstract inner class SubCb<T : IEvBase> : IMqttMessageListener {
         abstract fun type(): TypeReference<T>
         abstract val eventType: String
         abstract val topic: String
-        open var callback: (T) -> Unit = {}
+        open var callback: (GEvMsg) -> Unit = {}
         var eui = ""
         override fun messageArrived(topic: String?, message: MqttMessage?) {
             try {
@@ -88,8 +94,8 @@ class ChirpStackNegotiator(val opt: ChirpStackConnectionOptions) {
                 logger.info("device \"$eui\" send message:\n${message.toString()}")
                 val mapper = jacksonObjectMapper()
                 val payload = mapper.readValue(message.toString(), type())
-
-                callback(payload)
+                val gev = payload.ToGEv()
+                callback(DeviceAPI.getEventAdditionalData(gev))
             } catch (e: InvalidEventTopicException) {
                 logger.warn("topic string \"topic\" ${e.message}")
             } catch (e: InvalidDeviceException) {
@@ -107,8 +113,7 @@ class ChirpStackNegotiator(val opt: ChirpStackConnectionOptions) {
         }
 
         override val eventType = "up"
-        override val topic = "application/$opt.appId/device/+/event/$eventType"
-        override var callback: (EvUp) -> Unit = { x -> logger.info(x.data) }
+        override val topic = "application/${opt.appId}/device/+/event/$eventType"
     }
 
     inner class SubCbJoin : SubCb<EvJoin>() {

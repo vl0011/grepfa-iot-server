@@ -1,63 +1,90 @@
 package com.grepfa.iot.data.event.grepfa
-import com.fasterxml.jackson.annotation.JsonProperty
 
+import kotlinx.serialization.Serializable
+import com.grepfa.iot.data.event.grepfa.IGEvBase as IGEvBase
 
+@Serializable
+data class GEvMsg(
+    val deviceId: String,
+    val profileId: String,
+//    val forwardedTime:
+    val ev: IGEvBase,
+)
+
+interface IGEvBase {
+    val address: String
+    val network: String
+    val type: String
+}
+
+@Serializable
 data class GEvUp(
-    var address: String,
-    var msgId: String,
-    var `data`: String,
-    var deviceUniqueId: String,
-    var network: String,
-    var time :String
-)
+    override val address: String,
+    override val network: String,
+    val msgId: String,
+    val `data`: String,
+    val time: String,
+    override val type:String = "UP"
+) : IGEvBase
 
+@Serializable
 data class GEvStatus(
-    var batLv: String,
-    var msgId: String,
-    var deviceUniqueId: String,
-    var margin: String,
-    var time: String
-)
+    override val address: String,
+    override val network: String,
+    val batLv: Double,
+    val margin: Int,
+    val time: String,
+    override val type:String = "STATUS"
+) : IGEvBase
 
+@Serializable
 data class GEvJoin(
-    var address: String,
-    var msgId: String,
-    var deviceUniqueId: String,
-    var network: String,
-    var time: String
-)
+    override val address: String,
+    override val network: String,
+    val msgId: String,
+    val time: String,
+    override val type:String = "JOIN"
+) : IGEvBase
 
+@Serializable
 data class GEvAck(
-    var deviceUniqueId: String,
-    var address: String,
-    var msgId: String,
-    var network: String,
-    var queueId: String,
-    var time: String
-)
+    override val address: String,
+    override val network: String,
+    val msgId: String,
+    val queueId: String,
+    val time: String,
+    override val type:String = "ACK"
+) : IGEvBase
 
+@Serializable
 data class GEvTxAck(
-    var deviceUniqueId: String,
-    var address: String,
-    var network: String,
-    var queueId: String,
-    var time: String
-)
+    override val address: String,
+    override val network: String,
+    val queueId: String,
+    val downlinkId: Long,
+    val time: String,
+    override val type:String = "TXACK"
+) : IGEvBase
 
+@Serializable
 data class GEvLog(
-    var address: String,
-    var code: String,
-    var description: String,
-    var deviceUniqueId: String,
-    var level: String,
-    var network: String,
-    var time: String
-)
+    override val address: String,
+    override val network: String,
+    val code: String,
+    val description: String,
+    val level: String,
+    val time: String,
+    override val type:String = "LOG"
+) : IGEvBase
 
+@Serializable
 data class GEvLocation(
-    var altitude: Double,
-    var latitude: Double,
-    var longtitude: Double,
-    var msgId: String,
-    var time: String
-)
+    override val address: String,
+    override val network: String,
+    val altitude: Double,
+    val latitude: Double,
+    val longitude: Double,
+    val msgId: String,
+    val time: String,
+    override val type:String = "LOCATION"
+) : IGEvBase

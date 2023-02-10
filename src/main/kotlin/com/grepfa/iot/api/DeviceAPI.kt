@@ -1,5 +1,7 @@
 package com.grepfa.iot.api
 
+import com.grepfa.iot.data.event.grepfa.GEvMsg
+import com.grepfa.iot.data.event.grepfa.IGEvBase
 import com.grepfa.iot.data.type.*
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -67,7 +69,7 @@ object DeviceAPI {
         }
     }
 
-    fun findPartsFromPhyAddress(phyAddress: String):GDeviceData {
+    fun findPartsFromPhyAddress(phyAddress: String): GDeviceData {
         logger.info("called: find parts from physical address")
         return transaction {
             val query = GDevices.innerJoin(GProfiles).innerJoin(GParts)
@@ -78,17 +80,19 @@ object DeviceAPI {
 
             val partsList = ArrayList<GPartData>()
             GPart.wrapRows(query).forEach() { x ->
-                partsList.add(GPartData(
-                    id = x.id.value.toString(),
-                    name = x.name,
-                    type = x.type,
-                    varType = x.varType,
-                    summary = x.summary,
-                    desc = x.desc,
-                    unit = x.unit,
-                    min = x.min,
-                    max = x.max,
-                ))
+                partsList.add(
+                    GPartData(
+                        id = x.id.value.toString(),
+                        name = x.name,
+                        type = x.type,
+                        varType = x.varType,
+                        summary = x.summary,
+                        desc = x.desc,
+                        unit = x.unit,
+                        min = x.min,
+                        max = x.max,
+                    )
+                )
             }
             GDeviceData(
                 parts = partsList,
@@ -103,7 +107,7 @@ object DeviceAPI {
         }
     }
 
-    fun findPartsFromDeviceUUID(uuid: String):GDeviceData {
+    fun findPartsFromDeviceUUID(uuid: String): GDeviceData {
         logger.info("called: find parts from device uuid")
         return transaction {
             val query = GDevices.innerJoin(GProfiles).innerJoin(GParts)
@@ -114,17 +118,19 @@ object DeviceAPI {
 
             val partsList = ArrayList<GPartData>()
             GPart.wrapRows(query).forEach() { x ->
-                partsList.add(GPartData(
-                    id = x.id.value.toString(),
-                    name = x.name,
-                    type = x.type,
-                    varType = x.varType,
-                    summary = x.summary,
-                    desc = x.desc,
-                    unit = x.unit,
-                    min = x.min,
-                    max = x.max,
-                ))
+                partsList.add(
+                    GPartData(
+                        id = x.id.value.toString(),
+                        name = x.name,
+                        type = x.type,
+                        varType = x.varType,
+                        summary = x.summary,
+                        desc = x.desc,
+                        unit = x.unit,
+                        min = x.min,
+                        max = x.max,
+                    )
+                )
             }
             GDeviceData(
                 parts = partsList,
@@ -139,18 +145,33 @@ object DeviceAPI {
         }
     }
 
+    fun getEventAdditionalData(gev: IGEvBase) : GEvMsg {
+        if (gev.network == Network.LORAWAN.columnName) {
+            val gdd = findPartsFromPhyAddress(gev.address)
+            return GEvMsg(
+                deviceId = gdd.deviceId,
+                profileId = gdd.profileId,
+                ev = gev
+            )
+        }
+        TODO("wifi")
+    }
+
+    fun payloadParser(msg: String) {
+        TODO()
+    }
 }
 
 
-@Serializable
-data class GDeviceData(
-    val name: String,
-    val summary: String,
-    val description: String,
-    val network: String,
-    val address: String,
-    val profileId: String,
-    val deviceId: String,
-    val parts: List<GPartData>
-)
+    @Serializable
+    data class GDeviceData(
+        val name: String,
+        val summary: String,
+        val description: String,
+        val network: String,
+        val address: String,
+        val profileId: String,
+        val deviceId: String,
+        val parts: List<GPartData>
+    )
 

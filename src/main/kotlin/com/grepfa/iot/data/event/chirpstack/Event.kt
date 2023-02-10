@@ -2,12 +2,12 @@
 
 package com.grepfa.iot.data.event.chirpstack
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.grepfa.iot.data.event.grepfa.GEvUp
+import com.grepfa.iot.api.Network
+import com.grepfa.iot.data.event.grepfa.*
 
-
-
-
-
+interface IEvBase{
+    fun ToGEv() : IGEvBase
+}
 data class EvUp(
     var `data`: String,
     var deduplicationId: String,
@@ -18,7 +18,7 @@ data class EvUp(
     var rxInfo: List<RxInfo>,
     var time: String,
     var txInfo: TxInfo
-){
+): IEvBase{
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,
@@ -65,6 +65,17 @@ data class EvUp(
             )
         }
     }
+
+    override fun ToGEv(): IGEvBase {
+        return GEvUp(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            msgId = this.deduplicationId,
+            data = this.data,
+            time = this.time
+        )
+    }
+
 }
 
 data class EvStatus(
@@ -73,7 +84,7 @@ data class EvStatus(
     var deviceInfo: DeviceInfo,
     var margin: Int,
     var time: String
-) {
+) : IEvBase {
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,
@@ -84,6 +95,16 @@ data class EvStatus(
         var tenantId: String,
         var tenantName: String
     )
+
+    override fun ToGEv(): IGEvBase {
+        return GEvStatus(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            batLv = this.batteryLevel,
+            margin = this.margin,
+            time = this.time
+        )
+    }
 }
 
 data class EvJoin(
@@ -92,7 +113,7 @@ data class EvJoin(
     var deviceInfo: DeviceInfo,
     var margin: Int,
     var time: String
-) {
+) : IEvBase {
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,
@@ -103,6 +124,15 @@ data class EvJoin(
         var tenantId: String,
         var tenantName: String
     )
+
+    override fun ToGEv(): IGEvBase {
+        return GEvJoin(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            msgId = this.deduplicationId,
+            time = this.time
+        )
+    }
 }
 
 data class EvAck(
@@ -112,7 +142,7 @@ data class EvAck(
     var fCntDown: Int,
     var queueItemId: String,
     var time: String
-) {
+) :IEvBase {
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,
@@ -128,6 +158,16 @@ data class EvAck(
             var key: String
         )
     }
+
+    override fun ToGEv(): IGEvBase {
+        return GEvAck(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            msgId = this.deduplicationId,
+            queueId = this.queueItemId,
+            time = this.time
+        )
+    }
 }
 
 data class EvTxAck(
@@ -138,7 +178,7 @@ data class EvTxAck(
     var queueItemId: String,
     var time: String,
     var txInfo: TxInfo
-) {
+):IEvBase {
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,
@@ -181,6 +221,16 @@ data class EvTxAck(
             )
         }
     }
+
+    override fun ToGEv(): IGEvBase {
+        return GEvTxAck(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            queueId = this.queueItemId,
+            time = this.time,
+            downlinkId = this.downlinkId
+        )
+    }
 }
 
 data class EVLog(
@@ -190,7 +240,7 @@ data class EVLog(
     var deviceInfo: DeviceInfo,
     var level: String,
     var time: String
-) {
+) :IEvBase {
     data class Context(
         @JsonProperty("deduplication_id")
         var deduplicationId: String
@@ -211,6 +261,17 @@ data class EVLog(
             var key: String
         )
     }
+
+    override fun ToGEv(): IGEvBase {
+        return GEvLog(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            code = this.code,
+            description = this.description,
+            level = this.level,
+            time = this.time
+        )
+    }
 }
 
 data class EvLocation(
@@ -218,7 +279,7 @@ data class EvLocation(
     var deviceInfo: DeviceInfo,
     var location: Location,
     var time: String
-) {
+) :IEvBase{
     data class DeviceInfo(
         var applicationId: String,
         var applicationName: String,
@@ -236,8 +297,20 @@ data class EvLocation(
     }
 
     data class Location(
-        var altitude: Int,
+        var altitude: Double,
         var latitude: Double,
         var longitude: Double
     )
+
+    override fun ToGEv(): IGEvBase {
+        return GEvLocation(
+            address = this.deviceInfo.devEui,
+            network = Network.LORAWAN.columnName,
+            altitude = this.location.altitude,
+            longitude =  this.location.longitude,
+            latitude = this.location.latitude,
+            msgId = this.deduplicationId,
+            time = this.time
+        )
+    }
 }
