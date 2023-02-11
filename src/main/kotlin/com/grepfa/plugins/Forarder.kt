@@ -1,11 +1,21 @@
 package com.grepfa.plugins
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.grepfa.iot.api.GNewProfileRequest
+import com.grepfa.iot.api.ProfileAPI
+import com.grepfa.iot.data.event.grepfa.GEvMsg
 import com.grepfa.iot.data.eventListener.EventListener
 import com.grepfa.iot.data.eventListener.ForwardingURLs
 import com.grepfa.iot.nego.ChirpStackConnectionOptions
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.*
+import org.slf4j.LoggerFactory
 import java.util.*
 
 fun Application.configureForwarder() {
@@ -21,7 +31,8 @@ fun Application.configureForwarder() {
 //
 //    }
 
-    val el = EventListener(opt)
+
+    val el = EventListener(opt, this.coroutineContext)
 
     routing {
         route("/forwarder") {
@@ -30,11 +41,7 @@ fun Application.configureForwarder() {
                     call.respond(ForwardingURLs())
                 }
                 post {
-
                 }
-            }
-            route("demo") {
-
             }
         }
     }

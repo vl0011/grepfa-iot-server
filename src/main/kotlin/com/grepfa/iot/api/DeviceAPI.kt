@@ -69,12 +69,16 @@ object DeviceAPI {
         }
     }
 
+    fun findPartFromPartId(partId: String): GPart {
+        return transaction {  GPart.findById(UUID.fromString(partId))} ?: throw NullPointerException()
+    }
+
     fun findPartsFromPhyAddress(phyAddress: String): GDeviceData {
         logger.info("called: find parts from physical address")
         return transaction {
             val query = GDevices.innerJoin(GProfiles).innerJoin(GParts)
                 .select {
-                    GDevices.address eq phyAddress and (GParts.type eq PartType.SENSOR.columnName)
+                    GDevices.address eq phyAddress// and (GParts.type eq PartType.SENSOR.columnName)
                 }
             val di = GDevice.wrapRows(query).first()
 
@@ -112,7 +116,7 @@ object DeviceAPI {
         return transaction {
             val query = GDevices.innerJoin(GProfiles).innerJoin(GParts)
                 .select {
-                    GDevices.id eq UUID.fromString(uuid) and (GParts.type eq PartType.SENSOR.columnName)
+                    GDevices.id eq UUID.fromString(uuid)// and (GParts.type eq PartType.SENSOR.columnName)
                 }
             val di = GDevice.wrapRows(query).first()
 
@@ -148,13 +152,23 @@ object DeviceAPI {
     fun getEventAdditionalData(gev: IGEvBase) : GEvMsg {
         if (gev.network == Network.LORAWAN.columnName) {
             val gdd = findPartsFromPhyAddress(gev.address)
+
             return GEvMsg(
                 deviceId = gdd.deviceId,
                 profileId = gdd.profileId,
                 ev = gev
             )
         }
-        TODO("wifi")
+        if (gev.network == Network.TCP_IP.columnName) {
+            val gdd = findPartsFromDeviceUUID(gev.address)
+
+            return GEvMsg(
+                deviceId = gdd.deviceId,
+                profileId = gdd.profileId,
+                ev = gev
+            )
+        }
+        throw Exception()
     }
 
     fun payloadParser(msg: String) {

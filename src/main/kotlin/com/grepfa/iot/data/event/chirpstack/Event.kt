@@ -2,8 +2,14 @@
 
 package com.grepfa.iot.data.event.chirpstack
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.grepfa.iot.api.DeviceAPI
 import com.grepfa.iot.api.Network
 import com.grepfa.iot.data.event.grepfa.*
+import org.slf4j.LoggerFactory
+import java.util.*
+import kotlin.collections.ArrayList
 
 interface IEvBase{
     fun ToGEv() : IGEvBase
@@ -67,16 +73,46 @@ data class EvUp(
     }
 
     override fun ToGEv(): IGEvBase {
+        val bdec = Base64.getDecoder()
+        val decoded = bdec.decode(this.data)
+        LoggerFactory.getLogger(javaClass).info(String(decoded))
+        val p = jacksonObjectMapper().readValue(decoded, object: TypeReference<List<Payload>>() {})
+        val ret = ArrayList<Payload2>()
+
+        p.forEach {
+//            try {
+                val gp = DeviceAPI.findPartFromPartId(it.id)
+                ret.add(Payload2(
+                    id = it.id,
+                    value = it.value,
+                    name = gp.name,
+                    type = gp.type
+                ))
+//            } catch (_: Exception){}
+        }
+
         return GEvUp(
             address = this.deviceInfo.devEui,
             network = Network.LORAWAN.columnName,
             msgId = this.deduplicationId,
-            data = this.data,
+            data = jacksonObjectMapper().writeValueAsString(ret),
             time = this.time
         )
     }
 
 }
+
+data class Payload(
+    val id: String,
+    val value: String
+)
+data class Payload2(
+    val id: String,
+    val name: String,
+    val type: String,
+    val value: String,
+
+)
 
 data class EvStatus(
     var batteryLevel: Double,

@@ -101,7 +101,7 @@ class ChirpStackNegotiator(val opt: ChirpStackConnectionOptions) {
             } catch (e: InvalidDeviceException) {
                 logger.warn("mismatch eui topic and payload data: ${e.message}")
             } catch (e: Exception) {
-                logger.warn("unknown exception: ${e.message}")
+                logger.warn("unknown exception: ${e.message} ${e.stackTraceToString()}")
             }
         }
     }
@@ -200,14 +200,3 @@ class ChirpStackNegotiator(val opt: ChirpStackConnectionOptions) {
         down(eui, ObjectMapper().writeValueAsString(data), fPort, confirmed)
     }
 }
-
-data class DownLinkPayload(
-    var confirmed: Boolean,
-    var `data`: ByteArray,
-    var devEui: String,
-    var fPort: Int
-)
-
-
-class InvalidEventTopicException(message: String?) : RuntimeException(message) {}
-class InvalidDeviceException(message: String?) : RuntimeException(message) {}

@@ -18,10 +18,6 @@ fun Application.configureDatabases() {
     )
 
     routing {
-        route("/test") {
-            get {
-            }
-        }
         route("/api") {
             route("/profile") {
                 post("/add") {

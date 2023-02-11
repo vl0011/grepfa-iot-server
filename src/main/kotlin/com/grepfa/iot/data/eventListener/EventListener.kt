@@ -4,13 +4,19 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.grepfa.iot.data.event.grepfa.GEvMsg
 import com.grepfa.iot.nego.ChirpStackConnectionOptions
 import com.grepfa.iot.nego.ChirpStackNegotiator
+import com.grepfa.iot.nego.PlainMqttNegotiator
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.java.*
 import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.plugins.contentnegotiation.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
-import java.net.http.HttpClient
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.jackson.*
+import kotlin.coroutines.CoroutineContext
+
 @Serializable
 data class ForwardingURLs(
     val upCallbackURL: String = "",
@@ -33,19 +39,44 @@ data class CallbackURLs(
     val location: String,
 )
 
-class EventListener(csOpt: ChirpStackConnectionOptions) {
+class EventListener(csOpt: ChirpStackConnectionOptions, con: CoroutineContext) {
     val logger = LoggerFactory.getLogger(javaClass)
     val cs = ChirpStackNegotiator(csOpt)
-
-    var cb: CallbackURLs? = null
-
-    fun setURLs(c: CallbackURLs) {
-
-    }
+    val pm = PlainMqttNegotiator(csOpt)
+    val eq = EventQueue()
 
     fun commonProcess(m: GEvMsg) {
         logger.info(jacksonObjectMapper().writeValueAsString(m))
     }
+
+    init {
+        eq.setCallbackURL(
+            "http://localhost:8080/forwarder/test/up",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+
+        )
+
+        cs.up.callback = { this.commonProcess(it);eq.addUp(it) }
+        cs.join.callback = { this.commonProcess(it);eq.addJoin(it) }
+        cs.status.callback = { this.commonProcess(it);eq.addStatus(it) }
+        cs.log.callback = { this.commonProcess(it);eq.addLog(it) }
+        cs.ack.callback = { this.commonProcess(it);eq.addAck(it) }
+        cs.txAck.callback = { this.commonProcess(it);eq.addTxAck(it) }
+        cs.location.callback = { this.commonProcess(it);eq.addLocation(it) }
+
+        pm.up.callback = { this.commonProcess(it);eq.addUp(it) }
+    }
+
+}
+
+class EventQueue {
+    val logger = LoggerFactory.getLogger(javaClass)
+    var cb: CallbackURLs? = null
     fun setCallbackURL(
         up: String,
         join: String,
@@ -55,37 +86,130 @@ class EventListener(csOpt: ChirpStackConnectionOptions) {
         log: String,
         location: String
     ) {
-
-    }
-    init {
-
-        cs.up.callback = {
-            this.commonProcess(it)
-            if (cb != null) {
-                val client = HttpClient(CIO)
-
-            }
-        }
-        cs.join.callback = {
-            this.commonProcess(it)
-
-        }
-        cs.status.callback = { this.commonProcess(it) }
-        cs.log.callback = { this.commonProcess(it) }
-        cs.ack.callback = { this.commonProcess(it) }
-        cs.txAck.callback = { this.commonProcess(it) }
-        cs.location.callback = { this.commonProcess(it) }
+        cb = CallbackURLs(
+            up,
+            join,
+            status,
+            ack,
+            txAck,
+            log,
+            location
+        )
     }
 
-
-    class EventQueue {
-        suspend fun z() {
-
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addUp(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
         }
-        init {
-            launch {
-
+        val client = HttpClient(Java)
+        val ret = jacksonObjectMapper().writeValueAsString(payload)
+        GlobalScope.launch {
+            client.post(cb!!.up) {
+                contentType(ContentType.Application.Json)
+                setBody(ret)
             }
         }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addJoin(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
+        }
+        val client = HttpClient(Java)
+        GlobalScope.launch {
+            client.post(cb!!.join) {
+                contentType(ContentType.Application.Json)
+                setBody(jacksonObjectMapper().writeValueAsString(payload))
+            }
+        }
+
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addStatus(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
+        }
+        val client = HttpClient(Java) {
+        }
+        GlobalScope.launch {
+            client.post(cb!!.status) {
+                contentType(ContentType.Application.Json)
+                setBody(jacksonObjectMapper().writeValueAsString(payload))
+            }
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addAck(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
+        }
+        val client = HttpClient(Java) {
+        }
+        GlobalScope.launch {
+            client.post(cb!!.ack) {
+                contentType(ContentType.Application.Json)
+                setBody(jacksonObjectMapper().writeValueAsString(payload))
+            }
+        }
+
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addTxAck(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
+        }
+        val client = HttpClient(Java) {
+        }
+        GlobalScope.launch {
+            client.post(cb!!.txAck) {
+                contentType(ContentType.Application.Json)
+                setBody(jacksonObjectMapper().writeValueAsString(payload))
+            }
+        }
+
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addLog(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
+        }
+        val client = HttpClient(Java) {
+        }
+        GlobalScope.launch {
+            client.post(cb!!.log) {
+                contentType(ContentType.Application.Json)
+                setBody(jacksonObjectMapper().writeValueAsString(payload))
+            }
+        }
+
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    fun addLocation(payload: GEvMsg) {
+        if (cb == null) {
+            logger.warn("not set urls")
+            return
+        }
+        val client = HttpClient(Java) {
+        }
+        GlobalScope.launch {
+            client.post(cb!!.location) {
+                contentType(ContentType.Application.Json)
+                setBody(jacksonObjectMapper().writeValueAsString(payload))
+            }
+        }
+
     }
 }

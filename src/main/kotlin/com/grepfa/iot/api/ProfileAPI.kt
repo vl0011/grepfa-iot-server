@@ -54,6 +54,8 @@ data class GPartData(
     val max:Double = 0.0,
 )
 
+
+
 object ProfileAPI {
 
     fun newProfile(

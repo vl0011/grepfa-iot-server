@@ -7,6 +7,7 @@ val postgres_version: String by project
 
 plugins {
     kotlin("jvm") version "1.8.10"
+    
     id("io.ktor.plugin") version "2.2.3"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.8.10"
 }
@@ -37,7 +38,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-java:$ktor_version")
+
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-jackson:$ktor_version")
 }
